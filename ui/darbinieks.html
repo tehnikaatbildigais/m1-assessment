@@ -3,38 +3,270 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Iesniegumu saraksts · darbiniekam</title>
+  <title>Iesniegumu saraksts darbiniekam</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap&subset=latin-ext" rel="stylesheet">
   <style>
-    :root { --navy: #1D3557; --teal: #2A9D8F; --bg: #F1F3F5; --line: #C9CED6; }
+    :root {
+      --page: #E9EEEC;
+      --surface: #F7F9F8;
+      --lake: #0F3A40;
+      --lake-soft: #DCE6E4;
+      --ink: #14262A;
+      --muted: #56696C;
+      --reed: #7C8C4E;
+      --line: #C5D0CD;
+      --late: #B3261E;
+      --late-soft: #F6E1DE;
+      --focus: #2F7C86;
+    }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); }
-    header { background: var(--navy); color: #fff; padding: 16px; }
-    header h1 { margin: 0; font-size: 1.25rem; }
-    main { max-width: 1100px; margin: 0 auto; padding: 16px; }
-    .filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
-    label { display: block; font-weight: 600; }
-    input, select { padding: 8px; font: inherit; border: 1px solid var(--line); border-radius: 6px; margin-top: 4px; }
-    button { padding: 9px 18px; font: inherit; font-weight: 600; color: #fff; background: var(--teal); border: 0; border-radius: 6px; cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; margin-top: 16px; background: #fff; }
-    th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-    th { background: #e8ecf1; }
-    .count { margin-top: 12px; color: #444; }
-    td button { padding: 5px 12px; }
-    dialog { width: min(520px, calc(100% - 32px)); border: 1px solid var(--line); border-radius: 8px; padding: 20px; }
-    dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
-    dialog h2 { margin: 0 0 12px; font-size: 1.1rem; color: var(--navy); }
-    textarea { width: 100%; min-height: 100px; padding: 8px; font: inherit; border: 1px solid var(--line); border-radius: 6px; margin-top: 4px; }
-    .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
-    button.secondary { color: var(--navy); background: #e8ecf1; }
-    .error { color: #b00020; margin-top: 8px; }
-    .notice { margin-top: 12px; padding: 8px 12px; background: #e6f4f1; border-radius: 6px; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--ink);
+      background: var(--page);
+    }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+    /* Galvene */
+    header {
+      background: var(--lake);
+      color: #F2F6F5;
+      padding: 28px 24px 22px;
+    }
+    .masthead { max-width: 1160px; margin: 0 auto; }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .brand svg { width: 48px; height: 48px; flex: none; }
+    .brand span { font-weight: 600; font-size: 0.95rem; line-height: 1.2; color: #F2F6F5; }
+    .title-row { display: flex; flex-wrap: wrap; gap: 4px 24px; align-items: baseline; justify-content: space-between; }
+    .title-row h1 {
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 750;
+      letter-spacing: -0.015em;
+      line-height: 1.05;
+    }
+    .title-row p { margin: 0; color: #B9CCCB; font-size: 0.95rem; }
+
+    main { max-width: 1160px; margin: 0 auto; padding: 0 24px 48px; }
+
+    /* Filtri */
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 16px;
+      align-items: end;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .field label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+    select {
+      appearance: none;
+      min-width: 190px;
+      padding: 9px 36px 9px 12px;
+      font: inherit;
+      color: var(--ink);
+      background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2314262A' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 12px center;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    select:hover { border-color: var(--muted); }
+    button {
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      padding: 9px 20px;
+    }
+    .primary { color: #fff; background: var(--lake); }
+    .primary:hover { background: #164E56; }
+    .primary:disabled { opacity: 0.6; cursor: progress; }
+    .quiet { color: var(--lake); background: transparent; border-color: var(--line); }
+    .quiet:hover { background: var(--lake-soft); border-color: var(--lake); }
+    .danger { color: #fff; background: var(--late); }
+    .danger:hover { background: #8F1E18; }
+    .danger:disabled { opacity: 0.6; cursor: progress; }
+
+    .summary { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin: 18px 0 10px; }
+    .count { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .legend { display: flex; gap: 16px; font-size: 0.82rem; color: var(--muted); }
+    .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+    .legend .l-today::before { background: var(--ink); }
+    .legend .l-late::before { background: var(--late); }
+
+    .notice {
+      margin-top: 18px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-left: 4px solid var(--reed);
+      font-weight: 550;
+      animation: arrive 0.35s ease-out;
+    }
+    @keyframes arrive { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+    /* Tabula */
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+    th {
+      text-align: left;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      background: var(--page);
+    }
+    td { padding: 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: #EFF4F3; }
+    .num { font-variant-numeric: tabular-nums; }
+    .id { font-weight: 700; font-stretch: 87%; letter-spacing: 0.01em; }
+    .empty td { padding: 40px 14px; text-align: center; color: var(--muted); }
+    .empty strong { display: block; color: var(--ink); margin-bottom: 4px; }
+
+    .status { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+    .status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
+    .s-RECEIVED { color: #2F7C86; }
+    .s-IN_PROGRESS { color: #9A6B00; }
+    .s-FORWARDED { color: #5B5FA8; }
+    .s-ANSWERED { color: #4F6A2A; }
+    .s-WITHDRAWN { color: #7A8486; }
+    .status span { color: var(--ink); }
+
+    /* Termiņa josla: no saņemšanas līdz termiņam, atzīme rāda šodienu */
+    .due { min-width: 190px; }
+    .due-text { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
+    .due-left { font-weight: 650; }
+    .track { position: relative; height: 6px; margin-top: 7px; background: var(--lake-soft); border-radius: 3px; }
+    .track .fill { position: absolute; inset: 0 auto 0 0; background: var(--reed); border-radius: 3px; }
+    .track .now { position: absolute; top: -4px; width: 2px; height: 14px; background: var(--ink); transform: translateX(-1px); }
+    .is-late .fill { background: var(--late); }
+    .is-late .due-left { color: var(--late); }
+    .is-late .track { background: var(--late-soft); }
+    .is-closed .due-left { color: var(--muted); font-weight: 500; }
+    .is-closed .track { display: none; }
+
+    td.act { text-align: right; }
+    td.act button { padding: 6px 14px; }
+
+    /* Dialogs */
+    dialog {
+      width: min(540px, calc(100% - 32px));
+      padding: 0;
+      border: 0;
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: 0 24px 60px rgba(15, 58, 64, 0.35);
+    }
+    dialog[open] { animation: lift 0.2s ease-out; }
+    @keyframes lift { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
+    dialog::backdrop { background: rgba(15, 58, 64, 0.55); }
+    dialog form { padding: 24px; }
+    dialog h2 { margin: 0 0 4px; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.005em; }
+    #withdraw-id { font-variant-numeric: tabular-nums; color: var(--lake); }
+    .lede { margin: 0 0 18px; color: var(--muted); }
+    dialog label { display: block; font-weight: 600; margin-bottom: 6px; }
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 10px 12px;
+      font: inherit;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      resize: vertical;
+    }
+    textarea:hover { border-color: var(--muted); }
+    .chars { margin-top: 4px; font-size: 0.82rem; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+    .error:not(:empty) {
+      margin-top: 10px;
+      padding: 8px 12px;
+      color: var(--late);
+      background: var(--late-soft);
+      border-radius: 4px;
+      font-weight: 550;
+    }
+    .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+    /* Šaurs ekrāns: katra rinda kļūst par bloku */
+    @media (max-width: 760px) {
+      header { padding: 22px 16px 18px; }
+      main { padding: 0 16px 40px; }
+      .filters { align-items: stretch; }
+      .field { flex: 1 1 140px; }
+      select { width: 100%; min-width: 0; }
+      .filters button { flex: 1 1 100%; }
+      table, tbody, tr, td { display: block; }
+      thead { display: none; }
+      table { border-radius: 6px; }
+      tbody tr { padding: 14px 16px; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; }
+      tbody tr:last-child { border-bottom: 0; }
+      td { padding: 0; border: 0; }
+      td[data-label]::before { content: attr(data-label) ": "; color: var(--muted); font-size: 0.85rem; }
+      td.id { grid-column: 1; font-size: 1.05rem; }
+      td.st { grid-column: 2; grid-row: 1; justify-self: end; }
+      td.due { grid-column: 1 / -1; margin: 6px 0; }
+      td.act { grid-column: 1 / -1; text-align: left; margin-top: 6px; }
+      td.act button { width: 100%; padding: 9px 14px; }
+      td.act:empty { display: none; }
+      .empty td { padding: 28px 0; }
+      .actions { flex-direction: column-reverse; }
+      .actions button { width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
   </style>
 </head>
 <body>
-  <header><h1>Ezermalas novada pašvaldība · Iesniegumu saraksts</h1></header>
+  <header>
+    <div class="masthead">
+      <div class="brand">
+        <!-- Izdomāts Ezermalas novada emblēmas zīmols: niedres pie ezera -->
+        <svg viewBox="0 0 48 48" role="img" aria-label="Ezermalas novada pašvaldības logo">
+          <defs><clipPath id="logo-disc"><circle cx="24" cy="24" r="21"/></clipPath></defs>
+          <circle cx="24" cy="24" r="21" fill="#F2F6F5"/>
+          <g clip-path="url(#logo-disc)">
+            <rect x="0" y="31" width="48" height="17" fill="#DCE6E4"/>
+            <g fill="none" stroke="#0F3A40" stroke-width="2" stroke-linecap="round">
+              <path d="M0 31.5q4 -2.4 8 0t8 0t8 0t8 0t8 0t8 0"/>
+              <path d="M4 37q4 -2.4 8 0t8 0t8 0t8 0t8 0"/>
+              <path d="M10 42.5q4 -2.4 8 0t8 0t8 0"/>
+            </g>
+            <g stroke="#7C8C4E" stroke-width="1.8" stroke-linecap="round" fill="none">
+              <path d="M16 31.5Q15.5 22 14 12"/>
+              <path d="M21 31.5Q21 20 22 8.5"/>
+              <path d="M26 31.5Q27 24 29.5 15"/>
+              <path d="M21 26Q25 21 33 20"/>
+            </g>
+            <g fill="#6B4F32">
+              <rect x="12.6" y="13" width="3.2" height="8" rx="1.6" transform="rotate(-8 14.2 17)"/>
+              <rect x="20.2" y="9.5" width="3.4" height="9" rx="1.7" transform="rotate(4 21.9 14)"/>
+              <rect x="27.6" y="16" width="3.2" height="7" rx="1.6" transform="rotate(14 29.2 19.5)"/>
+            </g>
+          </g>
+          <circle cx="24" cy="24" r="21" fill="none" stroke="#0F3A40" stroke-width="1.5"/>
+        </svg>
+        <span>Ezermalas novada<br>pašvaldība</span>
+      </div>
+      <div class="title-row">
+        <h1>Iesniegumi</h1>
+        <p>Darbinieka skats</p>
+      </div>
+    </div>
+  </header>
   <main>
     <form class="filters" id="filters">
-      <div>
+      <div class="field">
         <label for="status">Statuss</label>
         <select id="status" name="status">
           <option value="">Visi</option>
@@ -45,7 +277,7 @@
           <option value="WITHDRAWN">Atsaukts</option>
         </select>
       </div>
-      <div>
+      <div class="field">
         <label for="topic">Tēma</label>
         <select id="topic" name="topic">
           <option value="">Visas</option>
@@ -56,13 +288,16 @@
           <option value="OTHER">Cits</option>
         </select>
       </div>
-      <button type="submit">Meklēt</button>
+      <button type="submit" class="primary">Meklēt</button>
     </form>
     <div class="notice" id="notice" aria-live="polite" hidden></div>
-    <div class="count" id="count"></div>
+    <div class="summary">
+      <div class="count" id="count" aria-live="polite"></div>
+      <div class="legend" aria-hidden="true"><span class="l-today">šodiena</span><span class="l-late">nokavēts termiņš</span></div>
+    </div>
     <table>
       <thead>
-        <tr><th>Numurs</th><th>Statuss</th><th>Tēma</th><th>Saņemts</th><th>Termiņš</th><th>Kanāls</th><th>Darbības</th></tr>
+        <tr><th>Numurs</th><th>Statuss</th><th>Tēma</th><th>Saņemts</th><th>Termiņš</th><th>Kanāls</th><th><span class="visually-hidden">Darbības</span></th></tr>
       </thead>
       <tbody id="rows"></tbody>
     </table>
@@ -70,12 +305,14 @@
   <dialog id="withdraw-dialog" aria-labelledby="withdraw-title">
     <form id="withdraw-form" method="dialog">
       <h2 id="withdraw-title">Atsaukt iesniegumu <span id="withdraw-id"></span></h2>
+      <p class="lede">Iesniegums saņems statusu “Atsaukts”, un iemesls tiks saglabāts vēsturē.</p>
       <label for="reason">Atsaukšanas iemesls (10–500 rakstzīmes)</label>
-      <textarea id="reason" name="reason"></textarea>
+      <textarea id="reason" name="reason" aria-describedby="reason-chars"></textarea>
+      <div class="chars" id="reason-chars">0 / 500</div>
       <div class="error" id="withdraw-error" aria-live="polite"></div>
       <div class="actions">
-        <button type="button" class="secondary" id="withdraw-cancel">Atcelt</button>
-        <button type="submit" id="withdraw-submit">Atsaukt</button>
+        <button type="button" class="quiet" id="withdraw-cancel">Atcelt</button>
+        <button type="submit" class="danger" id="withdraw-submit">Atsaukt iesniegumu</button>
       </div>
     </form>
   </dialog>
@@ -85,6 +322,7 @@
     const notice = document.getElementById("notice");
     const dialog = document.getElementById("withdraw-dialog");
     const reasonInput = document.getElementById("reason");
+    const reasonChars = document.getElementById("reason-chars");
     const withdrawError = document.getElementById("withdraw-error");
     let withdrawId = null;
 
@@ -98,11 +336,111 @@
       INVALID_STATE: "Iesniegumu šajā statusā nevar atsaukt",
       NOT_FOUND: "Iesniegums nav atrasts",
     };
+    const STATUS_TEXT = {
+      RECEIVED: "Saņemts",
+      IN_PROGRESS: "Izskatīšanā",
+      FORWARDED: "Pārsūtīts",
+      ANSWERED: "Atbildēts",
+      WITHDRAWN: "Atsaukts",
+    };
+    const TOPIC_TEXT = {
+      ROADS: "Ceļi un ielas",
+      WASTE: "Atkritumi",
+      PLANNING: "Teritorijas plānošana",
+      PARKS: "Parki un skvēri",
+      OTHER: "Cits",
+    };
+    const CHANNEL_TEXT = {
+      EMAIL: "E-pasts",
+      POST: "Pasts",
+      E_ADDRESS: "E-adrese",
+      PENDING_CHANNEL_CHECK: "Gaida pārbaudi",
+    };
+    const CLOSED = new Set(["ANSWERED", "WITHDRAWN"]);
+    const DAY = 24 * 60 * 60 * 1000;
 
-    function cell(text) {
+    function cell(text, className, label) {
       const td = document.createElement("td");
       td.textContent = text == null ? "" : text;
+      if (className) td.className = className;
+      if (label) td.dataset.label = label;
       return td;
+    }
+
+    function dayStart(value) {
+      const d = new Date(value);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    }
+
+    function dueCell(s) {
+      const td = document.createElement("td");
+      td.className = "due";
+      const text = document.createElement("div");
+      text.className = "due-text";
+      const date = document.createElement("span");
+      date.textContent = s.dueDate;
+      const left = document.createElement("span");
+      left.className = "due-left";
+      text.append(date, left);
+      td.appendChild(text);
+
+      if (CLOSED.has(s.status)) {
+        td.classList.add("is-closed");
+        left.textContent = "slēgts";
+        return td;
+      }
+
+      const start = dayStart(s.receivedAt);
+      const end = dayStart(s.dueDate + "T00:00:00");
+      const today = dayStart(Date.now());
+      const days = Math.round((end - today) / DAY);
+      if (days < 0) {
+        td.classList.add("is-late");
+        left.textContent = `nokavēts ${-days} d.`;
+      } else if (days === 0) {
+        left.textContent = "šodien";
+      } else {
+        left.textContent = `pēc ${days} d.`;
+      }
+
+      const span = Math.max(end - start, DAY);
+      const pct = Math.min(100, Math.max(0, ((today - start) / span) * 100));
+      const track = document.createElement("div");
+      track.className = "track";
+      track.setAttribute("aria-hidden", "true");
+      const fill = document.createElement("div");
+      fill.className = "fill";
+      fill.style.width = pct + "%";
+      const now = document.createElement("div");
+      now.className = "now";
+      now.style.left = pct + "%";
+      track.append(fill, now);
+      td.appendChild(track);
+      return td;
+    }
+
+    function statusCell(status) {
+      const td = document.createElement("td");
+      td.className = "st";
+      const badge = document.createElement("span");
+      badge.className = "status s-" + status;
+      const label = document.createElement("span");
+      label.textContent = STATUS_TEXT[status] || status;
+      badge.appendChild(label);
+      td.appendChild(badge);
+      return td;
+    }
+
+    function emptyRow(title, text) {
+      const tr = document.createElement("tr");
+      tr.className = "empty";
+      const td = document.createElement("td");
+      td.colSpan = 7;
+      const strong = document.createElement("strong");
+      strong.textContent = title;
+      td.append(strong, text);
+      tr.appendChild(td);
+      rows.appendChild(tr);
     }
 
     async function load(event) {
@@ -120,25 +458,44 @@
         return;
       }
       count.textContent = "Atrasti: " + data.length;
+      if (data.length === 0) {
+        emptyRow("Nav iesniegumu ar šiem filtriem", "Izvēlies citu statusu vai tēmu un spied “Meklēt”.");
+        return;
+      }
       for (const s of data) {
         const tr = document.createElement("tr");
-        [s.id, s.status, s.topic, s.receivedAt.slice(0, 10), s.dueDate, s.replyChannel]
-          .forEach((value) => tr.appendChild(cell(value)));
+        tr.appendChild(cell(s.id, "id num"));
+        tr.appendChild(statusCell(s.status));
+        tr.appendChild(cell(TOPIC_TEXT[s.topic] || s.topic, null, "Tēma"));
+        tr.appendChild(cell(s.receivedAt.slice(0, 10), "num", "Saņemts"));
+        tr.appendChild(dueCell(s));
+        tr.appendChild(cell(CHANNEL_TEXT[s.replyChannel] || s.replyChannel, null, "Kanāls"));
         const actions = document.createElement("td");
-        const button = document.createElement("button");
-        button.type = "button";
-        button.textContent = "Atsaukt";
-        button.addEventListener("click", () => openWithdraw(s.id));
-        actions.appendChild(button);
+        actions.className = "act";
+        // Slēgtajiem (atbildētiem vai atsauktiem) atsaukšana nav pieejama.
+        if (!CLOSED.has(s.status)) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "quiet";
+          button.textContent = "Atsaukt";
+          button.setAttribute("aria-label", `Atsaukt iesniegumu ${s.id}`);
+          button.addEventListener("click", () => openWithdraw(s.id));
+          actions.appendChild(button);
+        }
         tr.appendChild(actions);
         rows.appendChild(tr);
       }
+    }
+
+    function updateChars() {
+      reasonChars.textContent = `${reasonInput.value.length} / 500`;
     }
 
     function openWithdraw(id) {
       withdrawId = id;
       document.getElementById("withdraw-id").textContent = id;
       reasonInput.value = "";
+      updateChars();
       withdrawError.textContent = "";
       dialog.showModal();
       reasonInput.focus();
@@ -172,6 +529,8 @@
         }
         dialog.close();
         notice.textContent = `Iesniegums ${body.id} atsaukts.`;
+        notice.hidden = true;
+        void notice.offsetWidth;
         notice.hidden = false;
         await load();
       } catch (error) {
@@ -181,6 +540,7 @@
       }
     }
 
+    reasonInput.addEventListener("input", updateChars);
     document.getElementById("withdraw-form").addEventListener("submit", submitWithdraw);
     document.getElementById("withdraw-cancel").addEventListener("click", () => dialog.close());
 
