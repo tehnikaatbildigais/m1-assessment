@@ -3,8 +3,9 @@
 import re
 from datetime import date, datetime
 from enum import Enum
+from typing import Annotated
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, StringConstraints, field_validator
 from pydantic_core import PydanticCustomError
 
 # CR-1: 11 cipari vai DDMMYY-NNNNN. Tikai formāts, bez kontrolcipara.
@@ -92,6 +93,13 @@ class SubmissionListItem(BaseModel):
     receivedAt: datetime
     dueDate: date
     replyChannel: ReplyChannel
+
+
+class WithdrawRequest(BaseModel):
+    # CR-A: atstarpes sākumā un beigās neskaita, tāpēc tukšs iemesls nav derīgs.
+    reason: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=10, max_length=500)
+    ]
 
 
 class AuditEntry(BaseModel):
