@@ -19,6 +19,15 @@
     th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
     th { background: #e8ecf1; }
     .count { margin-top: 12px; color: #444; }
+    td button { padding: 5px 12px; }
+    dialog { width: min(520px, calc(100% - 32px)); border: 1px solid var(--line); border-radius: 8px; padding: 20px; }
+    dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
+    dialog h2 { margin: 0 0 12px; font-size: 1.1rem; color: var(--navy); }
+    textarea { width: 100%; min-height: 100px; padding: 8px; font: inherit; border: 1px solid var(--line); border-radius: 6px; margin-top: 4px; }
+    .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+    button.secondary { color: var(--navy); background: #e8ecf1; }
+    .error { color: #b00020; margin-top: 8px; }
+    .notice { margin-top: 12px; padding: 8px 12px; background: #e6f4f1; border-radius: 6px; }
   </style>
 </head>
 <body>
@@ -49,17 +58,46 @@
       </div>
       <button type="submit">Meklēt</button>
     </form>
+    <div class="notice" id="notice" aria-live="polite" hidden></div>
     <div class="count" id="count"></div>
     <table>
       <thead>
-        <tr><th>Numurs</th><th>Statuss</th><th>Tēma</th><th>Saņemts</th><th>Termiņš</th><th>Kanāls</th></tr>
+        <tr><th>Numurs</th><th>Statuss</th><th>Tēma</th><th>Saņemts</th><th>Termiņš</th><th>Kanāls</th><th>Darbības</th></tr>
       </thead>
       <tbody id="rows"></tbody>
     </table>
   </main>
+  <dialog id="withdraw-dialog" aria-labelledby="withdraw-title">
+    <form id="withdraw-form" method="dialog">
+      <h2 id="withdraw-title">Atsaukt iesniegumu <span id="withdraw-id"></span></h2>
+      <label for="reason">Atsaukšanas iemesls (10–500 rakstzīmes)</label>
+      <textarea id="reason" name="reason"></textarea>
+      <div class="error" id="withdraw-error" aria-live="polite"></div>
+      <div class="actions">
+        <button type="button" class="secondary" id="withdraw-cancel">Atcelt</button>
+        <button type="submit" id="withdraw-submit">Atsaukt</button>
+      </div>
+    </form>
+  </dialog>
   <script>
     const rows = document.getElementById("rows");
     const count = document.getElementById("count");
+    const notice = document.getElementById("notice");
+    const dialog = document.getElementById("withdraw-dialog");
+    const reasonInput = document.getElementById("reason");
+    const withdrawError = document.getElementById("withdraw-error");
+    let withdrawId = null;
+
+    // Statusa un iemesla pārbaudi dara API. Forma tikai parāda API kļūdu.
+    const ISSUE_TEXT = {
+      REQUIRED: "Iemesls ir obligāts",
+      INVALID_FORMAT: "Iemeslam jābūt 10–500 rakstzīmes garam",
+      TOO_LONG: "Iemesls ir garāks par 500 rakstzīmēm",
+    };
+    const ERROR_TEXT = {
+      INVALID_STATE: "Iesniegumu šajā statusā nevar atsaukt",
+      NOT_FOUND: "Iesniegums nav atrasts",
+    };
 
     function cell(text) {
       const td = document.createElement("td");
@@ -86,9 +124,65 @@
         const tr = document.createElement("tr");
         [s.id, s.status, s.topic, s.receivedAt.slice(0, 10), s.dueDate, s.replyChannel]
           .forEach((value) => tr.appendChild(cell(value)));
+        const actions = document.createElement("td");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = "Atsaukt";
+        button.addEventListener("click", () => openWithdraw(s.id));
+        actions.appendChild(button);
+        tr.appendChild(actions);
         rows.appendChild(tr);
       }
     }
+
+    function openWithdraw(id) {
+      withdrawId = id;
+      document.getElementById("withdraw-id").textContent = id;
+      reasonInput.value = "";
+      withdrawError.textContent = "";
+      dialog.showModal();
+      reasonInput.focus();
+    }
+
+    function errorText(body) {
+      const error = body && body.error;
+      if (!error) return "Neizdevās atsaukt iesniegumu";
+      if (error.code === "VALIDATION_ERROR") {
+        return (error.details || []).map((d) => ISSUE_TEXT[d.issue] || d.issue).join("; ")
+          || "Kļūdains pieprasījums";
+      }
+      return ERROR_TEXT[error.code] || error.message;
+    }
+
+    async function submitWithdraw(event) {
+      event.preventDefault();
+      withdrawError.textContent = "";
+      const submit = document.getElementById("withdraw-submit");
+      submit.disabled = true;
+      try {
+        const response = await fetch(`/submissions/${encodeURIComponent(withdrawId)}/withdraw`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason: reasonInput.value }),
+        });
+        const body = await response.json().catch(() => null);
+        if (!response.ok) {
+          withdrawError.textContent = errorText(body);
+          return;
+        }
+        dialog.close();
+        notice.textContent = `Iesniegums ${body.id} atsaukts.`;
+        notice.hidden = false;
+        await load();
+      } catch (error) {
+        withdrawError.textContent = "Nav savienojuma ar serveri";
+      } finally {
+        submit.disabled = false;
+      }
+    }
+
+    document.getElementById("withdraw-form").addEventListener("submit", submitWithdraw);
+    document.getElementById("withdraw-cancel").addEventListener("click", () => dialog.close());
 
     document.getElementById("filters").addEventListener("submit", load);
     load();
