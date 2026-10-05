@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  lint:
+    name: Stila pārbaude (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: ruff format --check .
+
+  test:
+    name: Testi (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m pytest -v
+
+  trace:
+    name: Izsekojamība (PR nosaukums)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: PR nosaukums sākas ar esoša pieteikuma ID
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          ID=$(echo "$TITLE" | grep -oE '^CR-[0-9A-Z]+[a-z]?(:)' | tr -d ':' || true)
+          if [ -z "$ID" ]; then
+            echo "::error::PR nosaukumam jāsākas ar pieteikuma ID, piemēram, 'CR-1: ...'"
+            exit 1
+          fi
+          if [ ! -f "tracker/$ID.md" ]; then
+            echo "::error::Pieteikums tracker/$ID.md neeksistē"
+            exit 1
+          fi
+          echo "Pieteikums: tracker/$ID.md"

@@ -1,0 +1,15 @@
+{
+  "name": "Ezermalas iesniegumu sistēma (m1-assessment)",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
+  "postCreateCommand": "python -m pip install -r requirements-dev.txt && curl -fsSL https://claude.ai/install.sh | bash",
+  "forwardPorts": [8000, 8001],
+  "portsAttributes": {
+    "8000": { "label": "Lietotne (/ui, /docs)", "onAutoForward": "notify" },
+    "8001": { "label": "OMD reģistra imitācija", "onAutoForward": "silent" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["anthropic.claude-code", "ms-python.python"]
+    }
+  }
+}

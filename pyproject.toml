@@ -1,0 +1,17 @@
+[project]
+name = "m1-assessment"
+version = "0.1.0"
+description = "Ezermalas pieteikumu sistēma · iesniegumu API (mācību prototips)"
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+filterwarnings = ["ignore:Using .httpx. with .starlette.testclient."]

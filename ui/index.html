@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="lv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Iesniegums · Ezermalas novada pašvaldība</title>
+  <style>
+    :root {
+      --navy: #1D3557;
+      --teal: #2A9D8F;
+      --coral: #E76F51;
+      --bg: #F1F3F5;
+      --line: #C9CED6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: #1a1a1a;
+    }
+    header { background: var(--navy); color: #fff; padding: 16px; }
+    header h1 { margin: 0; font-size: 1.25rem; }
+    header p { margin: 4px 0 0; font-size: 0.85rem; opacity: 0.85; }
+    main { max-width: 720px; margin: 0 auto; padding: 16px; }
+    .card { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    label { display: block; font-weight: 600; margin-top: 12px; }
+    input, select, textarea {
+      width: 100%; padding: 8px; margin-top: 4px; font: inherit;
+      border: 1px solid var(--line); border-radius: 6px; background: #fff;
+    }
+    textarea { min-height: 96px; resize: vertical; }
+    .field-error { color: var(--coral); font-size: 0.9rem; margin-top: 4px; min-height: 1em; }
+    .invalid { border-color: var(--coral); }
+    button {
+      margin-top: 16px; padding: 10px 20px; font: inherit; font-weight: 600;
+      color: #fff; background: var(--teal); border: 0; border-radius: 6px; cursor: pointer;
+    }
+    button:disabled { opacity: 0.6; cursor: wait; }
+    .message { padding: 12px; border-radius: 6px; margin-top: 16px; }
+    .message.error { background: #fdece7; border: 1px solid var(--coral); }
+    .message.ok { background: #e6f4f2; border: 1px solid var(--teal); }
+    dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 8px 0 0; }
+    dt { font-weight: 600; }
+    dd { margin: 0; }
+    footer { font-size: 0.8rem; color: #555; text-align: center; padding: 16px; }
+    a { color: var(--navy); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Ezermalas novada pašvaldība · Iesniegums</h1>
+    <p>Mācību prototips. Pašvaldība ir izdomāta. Ievadiet tikai sintētiskus datus.</p>
+  </header>
+
+  <main>
+    <form id="submission-form" class="card" novalidate>
+      <label for="personalCode">Personas kods</label>
+      <input id="personalCode" name="personalCode" autocomplete="off">
+      <div class="field-error" data-for="personalCode"></div>
+
+      <label for="fullName">Vārds, uzvārds</label>
+      <input id="fullName" name="fullName" autocomplete="off">
+      <div class="field-error" data-for="fullName"></div>
+
+      <label for="email">E-pasts</label>
+      <input id="email" name="email" autocomplete="off">
+      <div class="field-error" data-for="email"></div>
+
+      <label for="topic">Tēma</label>
+      <select id="topic" name="topic"></select>
+      <div class="field-error" data-for="topic"></div>
+
+      <label for="subject">Temats</label>
+      <input id="subject" name="subject" autocomplete="off">
+      <div class="field-error" data-for="subject"></div>
+
+      <label for="body">Teksts</label>
+      <textarea id="body" name="body"></textarea>
+      <div class="field-error" data-for="body"></div>
+
+      <label for="preferredChannel">Atbildes kanāls</label>
+      <select id="preferredChannel" name="preferredChannel">
+        <option value="EMAIL">E-pasts</option>
+        <option value="POST">Pasts</option>
+        <option value="E_ADDRESS">E-adrese</option>
+      </select>
+      <div class="field-error" data-for="preferredChannel"></div>
+
+      <button type="submit" id="submit">Iesniegt</button>
+      <div id="message" aria-live="polite"></div>
+    </form>
+  </main>
+
+  <footer>
+    <a href="/docs">Swagger UI (/docs)</a> · Ezermalas pieteikumu sistēma · mācību prototips
+  </footer>
+
+  <script>
+    // Ja API vēl nedod tēmu sarakstu (GET /topics), izmanto šo sarakstu.
+    const FALLBACK_TOPICS = [
+      { code: "ROADS", name: "Ceļi un ielas" },
+      { code: "WASTE", name: "Atkritumi" },
+      { code: "PLANNING", name: "Teritorijas plānošana" },
+      { code: "OTHER", name: "Cits" },
+    ];
+    const ISSUE_TEXT = {
+      REQUIRED: "Obligāts lauks",
+      INVALID_FORMAT: "Nepareizs formāts",
+      TOO_LONG: "Pārāk garš teksts",
+    };
+    const STATUS_TEXT = {
+      RECEIVED: "Saņemts",
+      IN_PROGRESS: "Izskatīšanā",
+      FORWARDED: "Pārsūtīts",
+      ANSWERED: "Atbildēts",
+      WITHDRAWN: "Atsaukts",
+    };
+    const CHANNEL_TEXT = {
+      EMAIL: "E-pasts",
+      POST: "Pasts",
+      E_ADDRESS: "E-adrese",
+      PENDING_CHANNEL_CHECK: "Kanāls jāpārbauda",
+    };
+
+    const form = document.getElementById("submission-form");
+    const message = document.getElementById("message");
+    const submitButton = document.getElementById("submit");
+
+    function pad(n) { return String(n).padStart(2, "0"); }
+
+    function formatDate(isoDate) {
+      const [year, month, day] = isoDate.split("-");
+      return `${day}.${month}.${year}`;
+    }
+
+    function formatDateTime(isoDateTime) {
+      const d = new Date(isoDateTime);
+      return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text == null ? "" : String(text);
+      return div.innerHTML;
+    }
+
+    async function loadTopics() {
+      let topics = FALLBACK_TOPICS;
+      try {
+        const response = await fetch("/topics");
+        if (response.ok) {
+          topics = await response.json();
+        }
+      } catch (error) {
+        // Paliek rezerves saraksts.
+      }
+      const select = document.getElementById("topic");
+      select.innerHTML = topics
+        .map((t) => `<option value="${escapeHtml(t.code)}">${escapeHtml(t.name)}</option>`)
+        .join("");
+    }
+
+    function clearErrors() {
+      document.querySelectorAll(".field-error").forEach((el) => (el.textContent = ""));
+      document.querySelectorAll(".invalid").forEach((el) => el.classList.remove("invalid"));
+      message.innerHTML = "";
+    }
+
+    function showFieldErrors(details) {
+      const unknown = [];
+      for (const detail of details || []) {
+        const target = document.querySelector(`.field-error[data-for="${detail.field}"]`);
+        const text = ISSUE_TEXT[detail.issue] || detail.issue;
+        if (target) {
+          target.textContent = text;
+          document.getElementById(detail.field)?.classList.add("invalid");
+        } else {
+          unknown.push(`${detail.field}: ${text}`);
+        }
+      }
+      return unknown;
+    }
+
+    function showResult(data) {
+      const reason = data.reasonCode ? escapeHtml(data.reasonCode) : "—";
+      message.className = "message ok";
+      message.innerHTML = `
+        <strong>Iesniegums pieņemts</strong>
+        <dl>
+          <dt>Numurs</dt><dd>${escapeHtml(data.id)}</dd>
+          <dt>Statuss</dt><dd>${escapeHtml(STATUS_TEXT[data.status] || data.status)}</dd>
+          <dt>Saņemts</dt><dd>${escapeHtml(formatDateTime(data.receivedAt))}</dd>
+          <dt>Atbildes termiņš</dt><dd>${escapeHtml(formatDate(data.dueDate))}</dd>
+          <dt>Atbildes kanāls</dt><dd>${escapeHtml(CHANNEL_TEXT[data.replyChannel] || data.replyChannel)}</dd>
+          <dt>Iemesls</dt><dd>${reason}</dd>
+        </dl>`;
+    }
+
+    function showError(status, body) {
+      const error = (body && body.error) || {};
+      const unknown = showFieldErrors(error.details);
+      const lines = [`<strong>Iesniegums nav pieņemts</strong> (HTTP ${status}${error.code ? ", " + escapeHtml(error.code) : ""})`];
+      if (error.message && status >= 500) {
+        lines.push(escapeHtml(error.message));
+      }
+      unknown.forEach((u) => lines.push(escapeHtml(u)));
+      message.className = "message error";
+      message.innerHTML = lines.join("<br>");
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      clearErrors();
+      const payload = Object.fromEntries(new FormData(form).entries());
+      // Tukšus laukus nesūtām: API pats pasaka, kas trūkst.
+      for (const key of Object.keys(payload)) {
+        if (payload[key] === "") delete payload[key];
+      }
+      submitButton.disabled = true;
+      try {
+        const response = await fetch("/submissions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        let body = null;
+        try { body = await response.json(); } catch (e) { /* nav JSON */ }
+        if (response.status === 201) {
+          showResult(body);
+        } else {
+          showError(response.status, body);
+        }
+      } catch (error) {
+        message.className = "message error";
+        message.textContent = "Neizdevās sazināties ar serveri.";
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+
+    loadTopics();
+  </script>
+</body>
+</html>

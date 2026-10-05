@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="lv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Iesniegumu saraksts · darbiniekam</title>
+  <style>
+    :root { --navy: #1D3557; --teal: #2A9D8F; --bg: #F1F3F5; --line: #C9CED6; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); }
+    header { background: var(--navy); color: #fff; padding: 16px; }
+    header h1 { margin: 0; font-size: 1.25rem; }
+    main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+    .filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+    label { display: block; font-weight: 600; }
+    input, select { padding: 8px; font: inherit; border: 1px solid var(--line); border-radius: 6px; margin-top: 4px; }
+    button { padding: 9px 18px; font: inherit; font-weight: 600; color: #fff; background: var(--teal); border: 0; border-radius: 6px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; background: #fff; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { background: #e8ecf1; }
+    .count { margin-top: 12px; color: #444; }
+  </style>
+</head>
+<body>
+  <header><h1>Ezermalas novada pašvaldība · Iesniegumu saraksts</h1></header>
+  <main>
+    <form class="filters" id="filters">
+      <div>
+        <label for="status">Statuss</label>
+        <select id="status" name="status">
+          <option value="">Visi</option>
+          <option value="RECEIVED">Saņemts</option>
+          <option value="IN_PROGRESS">Izskatīšanā</option>
+          <option value="FORWARDED">Pārsūtīts</option>
+          <option value="ANSWERED">Atbildēts</option>
+          <option value="WITHDRAWN">Atsaukts</option>
+        </select>
+      </div>
+      <div>
+        <label for="topic">Tēma</label>
+        <select id="topic" name="topic">
+          <option value="">Visas</option>
+          <option value="ROADS">Ceļi un ielas</option>
+          <option value="WASTE">Atkritumi</option>
+          <option value="PLANNING">Teritorijas plānošana</option>
+          <option value="PARKS">Parki un skvēri</option>
+          <option value="OTHER">Cits</option>
+        </select>
+      </div>
+      <button type="submit">Meklēt</button>
+    </form>
+    <div class="count" id="count"></div>
+    <table>
+      <thead>
+        <tr><th>Numurs</th><th>Statuss</th><th>Tēma</th><th>Saņemts</th><th>Termiņš</th><th>Kanāls</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </main>
+  <script>
+    const rows = document.getElementById("rows");
+    const count = document.getElementById("count");
+
+    function cell(text) {
+      const td = document.createElement("td");
+      td.textContent = text == null ? "" : text;
+      return td;
+    }
+
+    async function load(event) {
+      if (event) event.preventDefault();
+      const params = new URLSearchParams();
+      const status = document.getElementById("status").value;
+      const topic = document.getElementById("topic").value;
+      if (status) params.set("status", status);
+      if (topic) params.set("topic", topic);
+      const response = await fetch("/submissions?" + params.toString());
+      const data = await response.json();
+      rows.innerHTML = "";
+      if (!Array.isArray(data)) {
+        count.textContent = "Kļūda: " + JSON.stringify(data);
+        return;
+      }
+      count.textContent = "Atrasti: " + data.length;
+      for (const s of data) {
+        const tr = document.createElement("tr");
+        [s.id, s.status, s.topic, s.receivedAt.slice(0, 10), s.dueDate, s.replyChannel]
+          .forEach((value) => tr.appendChild(cell(value)));
+        rows.appendChild(tr);
+      }
+    }
+
+    document.getElementById("filters").addEventListener("submit", load);
+    load();
+  </script>
+</body>
+</html>
