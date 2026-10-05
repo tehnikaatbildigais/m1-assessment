@@ -7,6 +7,7 @@ import pytest
 from app import storage
 
 REASON = "Problēma jau ir atrisināta"
+JSON = {"Content-Type": "application/json"}
 
 
 def create(client, payload, status="RECEIVED"):
@@ -22,6 +23,12 @@ def withdraw(client, submission_id, body):
 
 def status_of(client, submission_id):
     return client.get(f"/submissions/{submission_id}").json()["status"]
+
+
+def assert_unchanged(client, submission_id):
+    assert status_of(client, submission_id) == "RECEIVED"
+    audit = client.get(f"/submissions/{submission_id}/audit").json()
+    assert [e["action"] for e in audit] == ["CREATE"]
 
 
 # 1., 2. kritērijs
@@ -183,3 +190,91 @@ def test_unexpected_error_hides_internal_details(client, monkeypatch, caplog):
         "error": {"code": "INTERNAL_ERROR", "message": "Internal server error"}
     }
     assert secret not in caplog.text
+
+
+# 6. kritērijs: ķermenis nav derīgs JSON objekts. Lēmums: kļūda attiecas uz visu
+# pieprasījumu (field "request"), jo lauka "reason" vispār nav.
+@pytest.mark.parametrize(
+    ("content", "headers", "issue"),
+    [
+        pytest.param(b"", JSON, "REQUIRED", id="empty"),
+        pytest.param(b"null", JSON, "REQUIRED", id="null"),
+        pytest.param(b'{"reason":', JSON, "INVALID_FORMAT", id="broken-json"),
+        pytest.param(b'["x"]', JSON, "INVALID_FORMAT", id="array"),
+        pytest.param(
+            b'{"reason": "Problema jau ir atrisinata"}',
+            {},
+            "INVALID_FORMAT",
+            id="no-ct",
+        ),
+    ],
+)
+def test_withdraw_malformed_body_returns_400(
+    client, valid_payload, content, headers, issue
+):
+    submission_id = create(client, valid_payload)
+
+    response = client.post(
+        f"/submissions/{submission_id}/withdraw", content=content, headers=headers
+    )
+
+    assert response.status_code == 400
+    error = response.json()["error"]
+    assert error["code"] == "VALIDATION_ERROR"
+    assert error["details"] == [{"field": "request", "issue": issue}]
+    assert_unchanged(client, submission_id)
+
+
+# 6. kritērijs: iemesls nav teksts
+@pytest.mark.parametrize(
+    "reason", [123, ["Problēma jau ir atrisināta"], {"text": REASON}, True]
+)
+def test_withdraw_reason_wrong_type_returns_400(client, valid_payload, reason):
+    submission_id = create(client, valid_payload)
+
+    response = withdraw(client, submission_id, {"reason": reason})
+
+    assert response.status_code == 400
+    assert response.json()["error"]["details"] == [
+        {"field": "reason", "issue": "INVALID_FORMAT"}
+    ]
+    assert_unchanged(client, submission_id)
+
+
+# 1. kritērijs un precizējums par dueDate: lieki lauki neko nemaina
+def test_withdraw_ignores_extra_fields(client, valid_payload):
+    submission_id = create(client, valid_payload)
+    before = client.get(f"/submissions/{submission_id}").json()
+
+    response = withdraw(
+        client,
+        submission_id,
+        {"reason": REASON, "status": "ANSWERED", "dueDate": "2000-01-01", "id": "X"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == submission_id
+    assert data["status"] == "WITHDRAWN"
+    assert data["dueDate"] == before["dueDate"]
+
+
+# 5. kritērijs: neparasts ID dod 404, nevis 500, un citus iesniegumus neskar
+@pytest.mark.parametrize(
+    "submission_id",
+    [
+        pytest.param("IES-2026-000001' OR '1'='1", id="sql"),
+        pytest.param("IES-2026-000001%", id="like"),
+        pytest.param("X" * 5000, id="long"),
+        pytest.param("IES-ā-ž", id="unicode"),
+    ],
+)
+def test_withdraw_unusual_id_returns_404(client, valid_payload, submission_id):
+    existing = create(client, valid_payload)
+    assert existing == "IES-2026-000001"
+
+    response = withdraw(client, submission_id, {"reason": REASON})
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "NOT_FOUND"
+    assert_unchanged(client, existing)
